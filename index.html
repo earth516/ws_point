@@ -1,1 +1,602 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>신의경애 포인트 site</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+      body { font-family: 'Noto Sans KR', sans-serif; }
+      .loader {
+        border-top-color: #10b981; /* emerald-500 */
+        -webkit-animation: spinner 1.5s linear infinite;
+        animation: spinner 1.5s linear infinite;
+      }
+      @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .fade-in { animation: fadeIn 0.3s ease-in-out; }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+  </head>
+  <body class="bg-emerald-50 min-h-screen flex items-center justify-center p-4">
 
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden relative min-h-[400px]">
+      
+      <!-- Top Header -->
+      <div class="bg-emerald-600 p-6 text-center shadow-md z-10 relative">
+        <h1 class="text-2xl font-bold text-white mb-1 flex items-center justify-center">
+          <img src="https://lh3.googleusercontent.com/d/1V_YQ43ciXHHlIf4_qjW_b8iBXz5qpvU8" alt="학교 마크" class="h-8 w-auto mr-2 rounded-full bg-white p-0.5">
+          신의경애 포인트 site
+        </h1>
+        <p class="text-emerald-100 text-sm">오류/기타 문의: 장미라, 이상준 선생님</p>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div id="loadingView" class="absolute inset-0 bg-white bg-opacity-90 z-50 hidden flex flex-col items-center justify-center">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <p class="text-gray-500 font-medium">데이터 확인 중...</p>
+      </div>
+
+      <!-- 1. Intro View (Role Selection) -->
+      <div id="introView" class="p-8 space-y-6 fade-in">
+        <p class="text-center text-gray-600 mb-4">접속하실 대상을 선택해주세요</p>
+        
+        <button onclick="switchView('teacherLogin')" class="w-full bg-white border-2 border-emerald-100 hover:border-emerald-500 hover:bg-emerald-50 p-4 rounded-xl flex items-center transition-all duration-200 group">
+          <div class="bg-emerald-100 text-emerald-600 rounded-full p-3 mr-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+            <i class="fas fa-chalkboard-teacher text-xl"></i>
+          </div>
+          <div class="text-left">
+            <h3 class="font-bold text-gray-800 text-lg">선생님</h3>
+            <p class="text-xs text-gray-500">로그인하여 스티커 배부</p>
+          </div>
+        </button>
+
+        <button onclick="switchView('studentLogin')" class="w-full bg-white border-2 border-emerald-100 hover:border-emerald-500 hover:bg-emerald-50 p-4 rounded-xl flex items-center transition-all duration-200 group">
+          <div class="bg-yellow-100 text-yellow-600 rounded-full p-3 mr-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+            <i class="fas fa-user-graduate text-xl"></i>
+          </div>
+          <div class="text-left">
+            <h3 class="font-bold text-gray-800 text-lg">학생</h3>
+            <p class="text-xs text-gray-500">내 스티커 개수 확인</p>
+          </div>
+        </button>
+      </div>
+
+      <!-- 2. Teacher Login View -->
+      <div id="teacherLoginView" class="hidden p-6 space-y-4 fade-in">
+        <div class="text-center mb-4">
+          <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded">교사 접속</span>
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2">선생님 성함</label>
+          <input id="teacherName" type="text" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="성함을 입력하세요">
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2">비밀번호</label>
+          <input id="teacherPw" type="password" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="비밀번호">
+        </div>
+        <button onclick="handleTeacherLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95">
+          로그인
+        </button>
+        <button onclick="switchView('intro')" class="w-full text-gray-400 text-sm py-2 hover:text-gray-600">
+          <i class="fas fa-arrow-left mr-1"></i> 뒤로가기
+        </button>
+      </div>
+
+      <!-- 3. Student Login View -->
+      <div id="studentLoginView" class="hidden p-6 space-y-4 fade-in">
+        <div class="text-center mb-4">
+          <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">학생 접속</span>
+        </div>
+        <div class="bg-emerald-50 p-4 rounded-lg text-sm text-emerald-700 mb-4">
+          <i class="fas fa-info-circle mr-1"></i> 학번을 정확하게 입력해주세요.
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2">학번</label>
+          <input id="studentIdLogin" type="number" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent" placeholder="예: 10101">
+        </div>
+        <button onclick="handleStudentLogin()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95">
+          내 스티커 확인하기
+        </button>
+        <button onclick="switchView('intro')" class="w-full text-gray-400 text-sm py-2 hover:text-gray-600">
+          <i class="fas fa-arrow-left mr-1"></i> 뒤로가기
+        </button>
+      </div>
+
+      <!-- 4. Teacher Dashboard -->
+      <div id="teacherDashboardView" class="hidden p-6 space-y-6 fade-in">
+        <!-- Info Card -->
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg shadow-sm">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-xs text-emerald-500 font-bold uppercase">Welcome</p>
+              <p class="font-bold text-gray-800" id="displayTeacherName">홍길동 선생님</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-gray-500">배부 가능</p>
+              <p class="font-bold text-emerald-600 text-xl" id="displayLimit">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="space-y-4">
+          <!-- Student Input Section (학번/이름 겸용) -->
+          <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">학생 추가 (학번 또는 이름)</label>
+            <div class="flex gap-2">
+              <!-- type을 text로 변경하여 이름 입력 가능 -->
+              <input id="teacherStudentInput" list="studentOptions" type="text" 
+                     class="block w-full bg-white border border-gray-300 text-gray-800 text-lg py-3 px-4 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors"
+                     placeholder="예: 10101 또는 홍길동" 
+                     onkeypress="if(event.key === 'Enter') addStudentToList()"
+                     oninput="handleStudentInput()">
+              <button onclick="addStudentToList()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg transition-colors whitespace-nowrap shadow-sm">
+                추가
+              </button>
+            </div>
+            
+            <datalist id="studentOptions">
+              <!-- Javascript will populate this -->
+            </datalist>
+
+            <!-- 검색 상태 표시 박스 -->
+            <div id="selectedStudentNameBox" class="mt-2 p-2 bg-gray-100 rounded-lg text-center hidden transition-all duration-300">
+              <span id="selectedStudentName" class="text-sm font-bold text-emerald-700"></span>
+            </div>
+            
+            <!-- 동명이인 해결을 위한 추가 UI 박스 -->
+            <div id="duplicateResolverBox" class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg hidden transition-all duration-300">
+              <p class="text-xs text-yellow-800 font-bold mb-2"><i class="fas fa-exclamation-circle mr-1"></i>동명이인이 있습니다. 해당하는 학생을 클릭하세요:</p>
+              <div id="duplicateButtons" class="flex flex-col gap-2">
+                <!-- 동명이인 버튼들이 여기에 추가됨 -->
+              </div>
+            </div>
+            
+            <!-- 선택된 학생 목록 태그 -->
+            <div id="selectedStudentsList" class="flex flex-wrap gap-2 mt-3 empty:hidden">
+              <!-- 자바스크립트로 추가됩니다 -->
+            </div>
+          </div>
+
+          <!-- Reason Input Section -->
+          <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">신의경애 사유</label>
+            <input id="stickerReason" type="text" 
+                   class="block w-full bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors"
+                   placeholder="예: 수업 태도가 훌륭함, 급식 지도 도우미">
+          </div>
+
+          <!-- Sticker Count Section -->
+          <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">신의경애 스티커 개수</label>
+            <div class="flex items-center justify-between bg-gray-100 rounded-lg p-1">
+              <button onclick="adjustCount(-1)" class="bg-white text-emerald-600 w-12 h-10 rounded shadow-sm font-bold text-lg hover:bg-gray-50 transition">-</button>
+              <input type="number" id="stickerCount" value="1" min="1" max="10" class="bg-transparent text-center text-gray-800 text-xl font-bold w-full focus:outline-none" readonly>
+              <button onclick="adjustCount(1)" class="bg-white text-emerald-600 w-12 h-10 rounded shadow-sm font-bold text-lg hover:bg-gray-50 transition">+</button>
+            </div>
+          </div>
+
+          <button onclick="submitSticker()" id="submitBtn" class="w-full bg-gray-400 text-white font-bold py-4 px-4 rounded-lg shadow-lg focus:outline-none mt-2 flex justify-center items-center cursor-not-allowed transition-colors duration-300" disabled>
+            <i class="fas fa-gift mr-2"></i> 대상을 추가하세요
+          </button>
+        </div>
+        
+        <div class="border-t pt-4">
+          <button onclick="logout()" class="text-sm text-gray-400 hover:text-gray-600 w-full text-center">로그아웃</button>
+        </div>
+      </div>
+
+      <!-- 5. Student Status View -->
+      <div id="studentDashboardView" class="hidden p-6 fade-in text-center">
+        <div class="mb-6">
+          <div class="inline-block p-4 rounded-full bg-yellow-100 text-yellow-500 mb-2">
+            <i class="fas fa-trophy text-4xl"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800 mb-1" id="studentNameDisplay">000 학생</h2>
+          <p class="text-gray-500 text-sm">현재까지 모은 신의경애 스티커</p>
+        </div>
+
+        <div class="bg-white border-2 border-emerald-100 rounded-2xl p-8 shadow-sm mb-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-yellow-400"></div>
+          <p class="text-6xl font-extrabold text-emerald-600 mb-2" id="studentTotalDisplay">0</p>
+          <span class="text-gray-400 font-medium">개</span>
+        </div>
+
+        <!-- 내역 리스트 부분 -->
+        <div class="mt-2 mb-6 text-left">
+          <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fas fa-list-ul mr-2 text-emerald-600"></i>최근 적립 내역</h3>
+          <div id="studentHistoryList" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+            <!-- 자바스크립트로 내역이 채워집니다 -->
+          </div>
+        </div>
+
+        <button onclick="switchView('intro')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 px-4 rounded-lg transition">
+          처음으로 돌아가기
+        </button>
+      </div>
+
+    </div>
+
+    <script>
+
+      // Apps Script 웹 앱의 /exec 주소를 입력하세요.
+      const API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+      async function callServer(action, ...args) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            // 사전 OPTIONS 요청을 피하는 단순 POST입니다.
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            credentials: 'omit',
+            redirect: 'follow',
+            body: JSON.stringify({ action, args }),
+            signal: controller.signal
+          });
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.error || '서버 연결 실패');
+          return data.result;
+        } catch (error) {
+          if (action === 'giveStickersMultiple') {
+            throw new Error('지급 결과를 확인할 수 없습니다. 중복 지급을 막기 위해 학생 내역과 배부기록을 확인한 뒤 다시 시도하세요.');
+          }
+          throw error;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+
+      const google = { script: { get run() {
+        let success = () => {}, failure = handleServerError;
+        const runner = {
+          withSuccessHandler(fn) { success = fn; return runner; },
+          withFailureHandler(fn) { failure = fn; return runner; },
+          giveStickersMultiple(...args) { callServer('giveStickersMultiple', ...args).then(success).catch(failure); },
+          checkStudentStatus(...args) { callServer('checkStudentStatus', ...args).then(success).catch(failure); }
+        };
+        return runner;
+      } } };
+
+      let currentUser = null;
+      let currentPassword = null;
+      let studentCache = []; 
+      let selectedStudentsList = []; 
+
+      function switchView(viewName) {
+        const views = ['intro', 'teacherLogin', 'studentLogin', 'teacherDashboard', 'studentDashboard'];
+        views.forEach(v => {
+          document.getElementById(v + 'View').classList.add('hidden');
+        });
+        
+        const target = document.getElementById(viewName + 'View');
+        target.classList.remove('hidden');
+
+      }
+
+      function toggleLoading(isLoading) {
+        const loader = document.getElementById('loadingView');
+        if (isLoading) loader.classList.remove('hidden');
+        else loader.classList.add('hidden');
+      }
+      
+      function handleServerError(error) {
+        toggleLoading(false);
+        alert("오류가 발생했습니다.\n\n원인: " + error.message);
+      }
+
+      // --- 선생님 기능 ---
+
+      async function loadStudentList() {
+        studentCache = await callServer('getStudentList', currentUser, currentPassword);
+        const datalist = document.getElementById('studentOptions');
+        datalist.innerHTML = '';
+        studentCache.forEach(s => {
+          const option = document.createElement('option');
+          option.value = s.id;
+          option.label = s.name;
+          datalist.appendChild(option);
+        });
+      }
+
+      function handleStudentInput() {
+        const inputId = document.getElementById('teacherStudentInput').value.trim();
+        const nameBox = document.getElementById('selectedStudentNameBox');
+        const nameSpan = document.getElementById('selectedStudentName');
+        const resolverBox = document.getElementById('duplicateResolverBox');
+        
+        resolverBox.classList.add('hidden'); // 일단 동명이인 창 숨기기
+
+        if (!inputId) {
+          nameBox.classList.add('hidden');
+          return;
+        }
+
+        // 학번 일치 또는 이름 일치 검색
+        const matches = studentCache.filter(s => String(s.id) === String(inputId) || s.name === inputId);
+
+        if (matches.length === 1) {
+          nameBox.classList.remove('hidden', 'bg-red-50', 'bg-yellow-50');
+          nameBox.classList.add('bg-emerald-50');
+          nameSpan.innerText = `${matches[0].id} ${matches[0].name} (엔터를 누르면 추가됩니다)`;
+          nameSpan.className = "text-sm font-bold text-emerald-700";
+        } else if (matches.length > 1) {
+          nameBox.classList.remove('hidden', 'bg-emerald-50', 'bg-red-50');
+          nameBox.classList.add('bg-yellow-50');
+          nameSpan.innerText = `동명이인 ${matches.length}명 검색됨! (추가 버튼을 누르세요)`;
+          nameSpan.className = "text-sm font-bold text-yellow-700";
+        } else {
+          nameBox.classList.remove('hidden', 'bg-emerald-50', 'bg-yellow-50');
+          nameBox.classList.add('bg-red-50');
+          nameSpan.innerText = "학생을 찾을 수 없습니다.";
+          nameSpan.className = "text-sm font-bold text-red-500";
+        }
+      }
+
+      // 학생 추가 (학번 또는 이름으로 처리)
+      function addStudentToList() {
+        const input = document.getElementById('teacherStudentInput');
+        const studentQuery = input.value.trim();
+        const resolverBox = document.getElementById('duplicateResolverBox');
+        
+        if (!studentQuery) return;
+
+        // 학번(정확히 일치) 또는 이름(정확히 일치)으로 검색
+        const matches = studentCache.filter(s => String(s.id) === String(studentQuery) || s.name === studentQuery);
+
+        if (matches.length === 0) {
+          alert('학생 정보를 찾을 수 없습니다. 정확한 학번이나 이름을 입력하세요.');
+          return;
+        }
+
+        // 검색 결과가 1명일 때 바로 추가
+        if (matches.length === 1) {
+          confirmAddStudent(matches[0]);
+        } 
+        // 동명이인 (2명 이상)일 때 선택 UI 표시
+        else {
+          const btnContainer = document.getElementById('duplicateButtons');
+          btnContainer.innerHTML = ''; // 기존 버튼 초기화
+          
+          matches.forEach(student => {
+            const btn = document.createElement('button');
+            btn.className = "w-full text-left bg-white border border-yellow-300 hover:bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow-sm font-medium transition-colors";
+            btn.innerHTML = `<span class="font-bold text-emerald-600 mr-2">${escapeHtml(student.id)}</span> ${escapeHtml(student.name)} 학생 추가하기`;
+            btn.onclick = function() {
+              confirmAddStudent(student);
+              resolverBox.classList.add('hidden'); // 선택 후 동명이인 창 숨김
+            };
+            btnContainer.appendChild(btn);
+          });
+          
+          resolverBox.classList.remove('hidden');
+          document.getElementById('selectedStudentNameBox').classList.add('hidden');
+        }
+      }
+
+      // 실제 장바구니 리스트에 넣는 함수
+      function confirmAddStudent(foundStudent) {
+        const input = document.getElementById('teacherStudentInput');
+        
+        // 이미 추가된 학생인지 확인
+        if (selectedStudentsList.some(s => String(s.id) === String(foundStudent.id))) {
+          alert('이미 추가된 학생입니다.');
+          input.value = '';
+          handleStudentInput();
+          return;
+        }
+
+        selectedStudentsList.push(foundStudent);
+        input.value = ''; // 입력창 비우기
+        handleStudentInput(); // 상태 텍스트 지우기
+        renderSelectedStudents();
+        updateSubmitButton();
+      }
+
+      // 리스트에서 제거 (오류 수정됨: 문자열 변환 비교)
+      function removeStudentFromList(studentId) {
+        selectedStudentsList = selectedStudentsList.filter(s => String(s.id) !== String(studentId));
+        renderSelectedStudents();
+        updateSubmitButton();
+      }
+
+      function renderSelectedStudents() {
+        const container = document.getElementById('selectedStudentsList');
+        container.innerHTML = '';
+        
+        selectedStudentsList.forEach(student => {
+          const badge = document.createElement('div');
+          badge.className = "bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-1.5 rounded-full text-sm flex items-center gap-2 shadow-sm animate-fade-in";
+          badge.innerHTML = `
+            <span class="font-bold">${escapeHtml(student.id)} ${escapeHtml(student.name)}</span>
+            <button onclick="removeStudentFromList('${escapeHtml(student.id)}')" class="text-emerald-500 hover:text-red-500 transition-colors focus:outline-none">
+              <i class="fas fa-times-circle"></i>
+            </button>
+          `;
+          container.appendChild(badge);
+        });
+      }
+
+      function updateSubmitButton() {
+        const submitBtn = document.getElementById('submitBtn');
+        const count = selectedStudentsList.length;
+
+        if (count > 0) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+          submitBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'hover:-translate-y-1');
+          submitBtn.innerHTML = `<i class="fas fa-gift mr-2"></i> ${count}명에게 일괄 지급하기`;
+        } else {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+          submitBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'hover:-translate-y-1');
+          submitBtn.innerHTML = `<i class="fas fa-gift mr-2"></i> 대상을 추가하세요`;
+        }
+      }
+
+      async function handleTeacherLogin() {
+        const name = document.getElementById('teacherName').value.trim();
+        const pw = document.getElementById('teacherPw').value;
+        if (!name || !pw) return alert('이름과 비밀번호를 모두 입력해주세요.');
+        toggleLoading(true);
+        try {
+          const res = await callServer('loginTeacher', name, pw);
+          if (!res.success) return alert(res.message);
+          currentUser = name;
+          currentPassword = pw;
+          await loadStudentList();
+          document.getElementById('displayTeacherName').innerText = name + ' 선생님';
+          document.getElementById('displayLimit').innerText = res.limit;
+          document.getElementById('teacherPw').value = '';
+          switchView('teacherDashboard');
+        } catch (error) {
+          currentUser = null;
+          currentPassword = null;
+          studentCache = [];
+          handleServerError(error);
+        } finally { toggleLoading(false); }
+      }
+
+      function adjustCount(delta) {
+        const input = document.getElementById('stickerCount');
+        let val = parseInt(input.value) + delta;
+        if (val < 1) val = 1;
+        if (val > 10) val = 10; 
+        input.value = val;
+      }
+
+      function submitSticker() {
+        if (selectedStudentsList.length === 0) return alert('학생을 추가해주세요.');
+        
+        const count = document.getElementById('stickerCount').value;
+        const reason = document.getElementById('stickerReason').value.trim(); 
+
+        if (!reason) {
+          if(!confirm('사유가 입력되지 않았습니다. 그래도 지급하시겠습니까?')) return;
+        }
+
+        if (!confirm(`총 ${selectedStudentsList.length}명의 학생에게 스티커 ${count}개를 각각 지급하시겠습니까?\n(총 ${selectedStudentsList.length * count}개 차감)`)) return;
+
+        toggleLoading(true);
+        const studentIds = selectedStudentsList.map(s => s.id);
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            toggleLoading(false);
+            if (res.success) {
+              alert(`총 ${res.successCount}명의 학생에게 지급이 완료되었습니다!`);
+              document.getElementById('displayLimit').innerText = res.remaining;
+              
+              document.getElementById('stickerCount').value = 1;
+              document.getElementById('teacherStudentInput').value = "";
+              document.getElementById('stickerReason').value = ""; 
+              document.getElementById('duplicateResolverBox').classList.add('hidden');
+              selectedStudentsList = []; 
+              renderSelectedStudents();
+              updateSubmitButton();
+              handleStudentInput();
+            } else {
+              alert("실패: " + res.message);
+            }
+          })
+          .withFailureHandler(handleServerError)
+          .giveStickersMultiple(currentUser, currentPassword, studentIds, count, reason); 
+      }
+
+      function logout() {
+        currentUser = null;
+        currentPassword = null;
+        studentCache = [];
+        document.getElementById('studentOptions').innerHTML = '';
+        document.getElementById('teacherName').value = '';
+        document.getElementById('teacherPw').value = '';
+        
+        document.getElementById('teacherStudentInput').value = "";
+        document.getElementById('stickerReason').value = "";
+        document.getElementById('duplicateResolverBox').classList.add('hidden');
+        selectedStudentsList = [];
+        renderSelectedStudents();
+        updateSubmitButton();
+        handleStudentInput();
+        
+        switchView('intro');
+      }
+
+      // --- 학생 기능 ---
+
+      function handleStudentLogin() {
+        const id = document.getElementById('studentIdLogin').value.trim();
+        if (!id) return alert('학번을 입력해주세요.');
+
+        toggleLoading(true);
+        google.script.run
+          .withSuccessHandler((res) => {
+            toggleLoading(false);
+            if (res.success) {
+              document.getElementById('studentNameDisplay').innerText = `${res.name} 학생`;
+              document.getElementById('studentTotalDisplay').innerText = res.total;
+              
+              const historyContainer = document.getElementById('studentHistoryList');
+              historyContainer.innerHTML = '';
+              if (res.history && res.history.length > 0) {
+                res.history.forEach(item => {
+                  const div = document.createElement('div');
+                  div.className = "bg-emerald-50 p-3 rounded-lg border border-emerald-100 shadow-sm text-sm";
+                  
+                  let displayDate = item.date;
+                  if(displayDate.includes('GMT')) {
+                    displayDate = new Date(item.date).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+                  }
+                  
+                  div.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                      <span class="text-gray-800 font-bold leading-tight flex-1 pr-2">${escapeHtml(item.reason)}</span>
+                      <span class="text-emerald-600 font-extrabold whitespace-nowrap">+${escapeHtml(item.count)}개</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-500 text-xs mt-2 border-t border-emerald-100 pt-2">
+                      <span><i class="fas fa-chalkboard-teacher mr-1"></i>${escapeHtml(item.teacher)} 선생님</span>
+                      <span>${escapeHtml(displayDate)}</span>
+                    </div>
+                  `;
+                  historyContainer.appendChild(div);
+                });
+              } else {
+                 historyContainer.innerHTML = '<p class="text-gray-400 text-center text-sm py-4">아직 받은 내역이 없습니다.</p>';
+              }
+
+              document.getElementById('studentIdLogin').value = ''; 
+              switchView('studentDashboard');
+            } else {
+              alert(res.message);
+            }
+          })
+          .withFailureHandler(handleServerError)
+          .checkStudentStatus(id);
+      }
+      
+      window.onload = function() {
+        switchView('intro');
+        if (typeof google === 'undefined' || !google.script) {
+          console.warn("구글 앱스 스크립트 환경이 아닙니다.");
+        }
+      };
+    </script>
+  </body>
+</html>
