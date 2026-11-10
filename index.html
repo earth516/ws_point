@@ -83,6 +83,11 @@
           <label class="block text-gray-700 text-sm font-bold mb-2">비밀번호</label>
           <input id="teacherPw" type="password" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" placeholder="비밀번호">
         </div>
+        <label class="flex items-center gap-2 text-sm text-gray-700">
+          <input id="rememberTeacher" type="checkbox" class="accent-emerald-600 w-4 h-4">
+          이 브라우저에서 7일간 자동 로그인
+        </label>
+        <p class="text-xs text-gray-500">개인 기기에서 선택해주세요. 공용 기기에서는 로그아웃해주세요.</p>
         <button onclick="handleTeacherLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95">
           로그인
         </button>
@@ -173,6 +178,7 @@
             <input id="stickerReason" type="text" 
                    class="block w-full bg-white border border-gray-300 text-gray-800 py-3 px-4 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors"
                    placeholder="예: 수업 태도가 훌륭함, 급식 지도 도우미">
+            <div id="reasonPresets" class="flex flex-wrap gap-2 mt-3" role="group" aria-label="자주 쓰는 사유"></div>
           </div>
 
           <!-- Sticker Count Section -->
@@ -229,7 +235,7 @@
     <script>
 
       // Apps Script 웹 앱의 /exec 주소를 입력하세요.
-      const API_URL = 'https://script.google.com/macros/s/AKfycbwtzdLKlU_bPkLRwtYSyvMphuqAQ9Ww80dD5wIxx10SbQg-bhRjhAgepzCFkBFMkFwBPg/exec';
+      const API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
       async function callServer(action, ...args) {
         const controller = new AbortController();
@@ -245,10 +251,14 @@
             signal: controller.signal
           });
           const data = await response.json();
-          if (!response.ok || !data.ok) throw new Error(data.error || '서버 연결 실패');
+          if (!response.ok || !data.ok) {
+            const error = new Error(data.error || '서버 연결 실패');
+            error.code = data.code;
+            throw error;
+          }
           return data.result;
         } catch (error) {
-          if (action === 'giveStickersMultiple') {
+          if (action === 'giveStickersMultiple' && error.code !== 'SESSION_EXPIRED') {
             throw new Error('지급 결과를 확인할 수 없습니다. 중복 지급을 막기 위해 학생 내역과 배부기록을 확인한 뒤 다시 시도하세요.');
           }
           throw error;
@@ -275,8 +285,76 @@
         return runner;
       } } };
 
+
+      // 이 목록의 문구를 바꾸면 사유 버튼도 바뀝니다.
+      const REASON_PRESETS = ['수업 참여', '과제 성실 수행', '친구 배려', '봉사 활동', '환경 정리', '학교 규칙 준수'];
+      // 저장소 키에 배포 주소를 포함하여 다른 학교/프로그램과 구분합니다.
+      const LOGIN_KEY = 'school-point-session-v2:' + API_URL;
+
+      function renderReasonPresets() {
+        const container = document.getElementById('reasonPresets');
+        container.replaceChildren();
+        REASON_PRESETS.forEach(reason => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = reason;
+          button.className = 'px-3 py-2 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs hover:bg-emerald-100';
+          button.onclick = () => {
+            const input = document.getElementById('stickerReason');
+            input.value = reason;
+            input.focus();
+          };
+          container.appendChild(button);
+        });
+      }
+
+      function readSavedLogin() {
+        try { return localStorage.getItem(LOGIN_KEY); } catch (_) { return null; }
+      }
+      function saveLogin(token) {
+        try { localStorage.setItem(LOGIN_KEY, token); return true; } catch (_) { return false; }
+      }
+      function removeSavedLogin() {
+        try { localStorage.removeItem(LOGIN_KEY); } catch (_) {}
+      }
+      async function showTeacherDashboard(res) {
+        await loadStudentList();
+        document.getElementById('displayTeacherName').innerText = res.name + ' 선생님';
+        document.getElementById('displayLimit').innerText = res.limit;
+        switchView('teacherDashboard');
+      }
+      function clearTeacherState() {
+        removeSavedLogin();
+        currentUser = null;
+        currentToken = null;
+        studentCache = [];
+        selectedStudentsList = [];
+        for (const id of ['teacherName', 'teacherPw', 'teacherStudentInput', 'stickerReason']) {
+          document.getElementById(id).value = '';
+        }
+        document.getElementById('studentOptions').innerHTML = '';
+        document.getElementById('duplicateResolverBox').classList.add('hidden');
+        document.getElementById('stickerCount').value = 1;
+        renderSelectedStudents();
+        updateSubmitButton();
+        handleStudentInput();
+      }
+      // 다른 탭에서 로그아웃하면 현재 탭의 교사 화면도 닫습니다.
+      window.addEventListener('storage', event => {
+        if (event.key === LOGIN_KEY && !event.newValue) {
+          currentToken = null;
+          currentUser = null;
+          studentCache = [];
+          selectedStudentsList = [];
+          document.getElementById('studentOptions').innerHTML = '';
+          renderSelectedStudents();
+          updateSubmitButton();
+          switchView('intro');
+        }
+      });
+
       let currentUser = null;
-      let currentPassword = null;
+      let currentToken = null;
       let studentCache = []; 
       let selectedStudentsList = []; 
 
@@ -299,13 +377,14 @@
       
       function handleServerError(error) {
         toggleLoading(false);
+        if (error.code === 'SESSION_EXPIRED') { clearTeacherState(); switchView('teacherLogin'); }
         alert("오류가 발생했습니다.\n\n원인: " + error.message);
       }
 
       // --- 선생님 기능 ---
 
       async function loadStudentList() {
-        studentCache = await callServer('getStudentList', currentUser, currentPassword);
+        studentCache = await callServer('getStudentList', currentToken);
         const datalist = document.getElementById('studentOptions');
         datalist.innerHTML = '';
         studentCache.forEach(s => {
@@ -454,22 +533,22 @@
       async function handleTeacherLogin() {
         const name = document.getElementById('teacherName').value.trim();
         const pw = document.getElementById('teacherPw').value;
+        const remember = document.getElementById('rememberTeacher').checked;
         if (!name || !pw) return alert('이름과 비밀번호를 모두 입력해주세요.');
         toggleLoading(true);
         try {
-          const res = await callServer('loginTeacher', name, pw);
+          const res = await callServer('loginTeacher', name, pw, remember);
           if (!res.success) return alert(res.message);
-          currentUser = name;
-          currentPassword = pw;
-          await loadStudentList();
-          document.getElementById('displayTeacherName').innerText = name + ' 선생님';
-          document.getElementById('displayLimit').innerText = res.limit;
+          currentUser = res.name;
+          currentToken = res.token;
+          removeSavedLogin();
+          if (remember && !saveLogin(res.token)) {
+            alert('브라우저가 저장을 차단해 자동 로그인을 설정하지 못했습니다. 현재 로그인은 사용할 수 있습니다.');
+          }
           document.getElementById('teacherPw').value = '';
-          switchView('teacherDashboard');
+          await showTeacherDashboard(res);
         } catch (error) {
-          currentUser = null;
-          currentPassword = null;
-          studentCache = [];
+          // 일시적 통신 오류라면 저장된 토큰을 보존해 다음 접속 때 다시 검증합니다.
           handleServerError(error);
         } finally { toggleLoading(false); }
       }
@@ -517,29 +596,18 @@
             }
           })
           .withFailureHandler(handleServerError)
-          .giveStickersMultiple(currentUser, currentPassword, studentIds, count, reason); 
+          .giveStickersMultiple(currentToken, studentIds, count, reason); 
       }
 
-      function logout() {
-        currentUser = null;
-        currentPassword = null;
-        studentCache = [];
-        document.getElementById('studentOptions').innerHTML = '';
-        document.getElementById('teacherName').value = '';
-        document.getElementById('teacherPw').value = '';
-        
-        document.getElementById('teacherStudentInput').value = "";
-        document.getElementById('stickerReason').value = "";
-        document.getElementById('duplicateResolverBox').classList.add('hidden');
-        selectedStudentsList = [];
-        renderSelectedStudents();
-        updateSubmitButton();
-        handleStudentInput();
-        
+      async function logout() {
+        const token = currentToken;
+        clearTeacherState();
         switchView('intro');
+        if (token) {
+          try { await callServer('logoutTeacher', token); }
+          catch (_) { alert('이 브라우저의 자동 로그인은 해제했습니다. 서버 로그아웃은 통신 오류로 확인하지 못했습니다.'); }
+        }
       }
-
-      // --- 학생 기능 ---
 
       function handleStudentLogin() {
         const id = document.getElementById('studentIdLogin').value.trim();
@@ -591,11 +659,26 @@
           .checkStudentStatus(id);
       }
       
-      window.onload = function() {
+      window.onload = async function() {
         switchView('intro');
-        if (typeof google === 'undefined' || !google.script) {
-          console.warn("구글 앱스 스크립트 환경이 아닙니다.");
-        }
+        renderReasonPresets();
+        const token = readSavedLogin();
+        if (!token) return;
+        toggleLoading(true);
+        try {
+          const res = await callServer('resumeSession', token);
+          currentUser = res.name;
+          currentToken = token;
+          await showTeacherDashboard(res);
+        } catch (error) {
+          currentUser = null;
+          currentToken = null;
+          studentCache = [];
+          if (error.code === 'SESSION_EXPIRED') {
+            clearTeacherState();
+            switchView('teacherLogin');
+          } else { handleServerError(error); }
+        } finally { toggleLoading(false); }
       };
     </script>
   </body>
